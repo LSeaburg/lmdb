@@ -1,7 +1,6 @@
 /data/*.bz2
 /data/*.db
 /data/movie_list.txt
-*.ipynb
 
 *.egg-info/
 
