@@ -24,7 +24,8 @@ def initialize_database():
         cur.executescript(
             """
             CREATE TABLE IF NOT EXISTS movies (
-                title TEXT PRIMARY KEY,
+                page_title TEXT PRIMARY KEY,
+                title TEXT ,
                 classification TEXT,
                 budget INTEGER,
                 box_office INTEGER,
@@ -74,7 +75,7 @@ def add_movie_to_database(movie_info):
     # Normalize list fields from the parser.
     directors = movie_info.get("director") or []
     genres = movie_info.get("genre") or []
-    title = movie_info.get("title", "")
+    page_title = movie_info.get("page_title", "")
 
     conn = _connect()
     try:
@@ -82,6 +83,7 @@ def add_movie_to_database(movie_info):
         cur.execute(
             """
             INSERT OR REPLACE INTO movies (
+                page_title,
                 title,
                 classification,
                 budget,
@@ -90,10 +92,11 @@ def add_movie_to_database(movie_info):
                 running_time,
                 rotten_tomatoes,
                 metacritic
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                title,
+                page_title,
+                movie_info.get("title", ""),
                 movie_info.get("classification", ""),
                 movie_info.get("budget"),
                 movie_info.get("box_office"),
@@ -138,12 +141,12 @@ def add_movie_to_database(movie_info):
         for director_id in director_ids:
             cur.execute(
                 "INSERT OR IGNORE INTO movie_directors (movie_title, director_id) VALUES (?, ?)",
-                (title, director_id),
+                (page_title, director_id),
             )
         for genre_id in genre_ids:
             cur.execute(
                 "INSERT OR IGNORE INTO movie_genres (movie_title, genre_id) VALUES (?, ?)",
-                (title, genre_id),
+                (page_title, genre_id),
             )
 
         conn.commit()

@@ -788,7 +788,8 @@ def process_movie(article_title: str):
     wt, resolved_title = get_wiki_text(article_title)
     if not wt:
         return {
-            "title": article_title,
+            "page_title": article_title,
+            "title": "",
             "classification": "",
             "director": [],
             "budget": "",
@@ -818,6 +819,7 @@ def process_movie(article_title: str):
     metacritic = _extract_metacritic_score(wt)
 
     return {
+        "page_title": lookup_title,
         "title": parsed_title,
         "classification": classification,
         "director": director,
