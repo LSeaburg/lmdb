@@ -25,7 +25,7 @@ def initialize_database():
             """
             CREATE TABLE IF NOT EXISTS movies (
                 page_title TEXT PRIMARY KEY,
-                title TEXT ,
+                movie_title TEXT ,
                 classification TEXT,
                 budget INTEGER,
                 box_office INTEGER,
@@ -46,18 +46,18 @@ def initialize_database():
             );
 
             CREATE TABLE IF NOT EXISTS movie_directors (
-                movie_title TEXT NOT NULL,
+                page_title TEXT NOT NULL,
                 director_id INTEGER NOT NULL,
-                PRIMARY KEY (movie_title, director_id),
-                FOREIGN KEY (movie_title) REFERENCES movies(title) ON DELETE CASCADE,
+                PRIMARY KEY (page_title, director_id),
+                FOREIGN KEY (page_title) REFERENCES movies(page_title) ON DELETE CASCADE,
                 FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS movie_genres (
-                movie_title TEXT NOT NULL,
+                page_title TEXT NOT NULL,
                 genre_id INTEGER NOT NULL,
-                PRIMARY KEY (movie_title, genre_id),
-                FOREIGN KEY (movie_title) REFERENCES movies(title) ON DELETE CASCADE,
+                PRIMARY KEY (page_title, genre_id),
+                FOREIGN KEY (page_title) REFERENCES movies(page_title) ON DELETE CASCADE,
                 FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
             );
             """
@@ -84,7 +84,7 @@ def add_movie_to_database(movie_info):
             """
             INSERT OR REPLACE INTO movies (
                 page_title,
-                title,
+                movie_title,
                 classification,
                 budget,
                 box_office,
@@ -140,12 +140,12 @@ def add_movie_to_database(movie_info):
         # so associations are cleared via ON DELETE CASCADE).
         for director_id in director_ids:
             cur.execute(
-                "INSERT OR IGNORE INTO movie_directors (movie_title, director_id) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO movie_directors (page_title, director_id) VALUES (?, ?)",
                 (page_title, director_id),
             )
         for genre_id in genre_ids:
             cur.execute(
-                "INSERT OR IGNORE INTO movie_genres (movie_title, genre_id) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO movie_genres (page_title, genre_id) VALUES (?, ?)",
                 (page_title, genre_id),
             )
 

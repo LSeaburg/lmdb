@@ -7,6 +7,10 @@ name = "lmdb"
 version = "0.0.0"
 description = "Wikipedia movie DB helpers"
 requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "ollama>=0.3.0",
+]
 
 [tool.setuptools]
 packages = ["utils"]
