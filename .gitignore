@@ -1,6 +1,9 @@
 /data/*.bz2
 /data/*.db
 /data/movie_list.txt
+*.old
+
+/demo
 
 *.egg-info/
 
