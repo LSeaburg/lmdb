@@ -184,6 +184,45 @@ def _parse_money_value(text: str) -> Optional[int]:
     if not text:
         return None
 
+    # Prefer explicit USD-denominated values ({{US$|...}}) over other currencies.
+    usd_matches = re.findall(r"\{\{\s*US\$\s*\|([^|}]+)", text, flags=re.IGNORECASE)
+    if usd_matches:
+        numbers = [_parse_money_value(v.strip()) for v in usd_matches]
+        numbers = [n for n in numbers if n is not None]
+        if numbers:
+            return int(round(sum(numbers) / len(numbers)))
+
+    # Also prefer bullet-list items that carry an explicit USD wiki-link marker
+    # (e.g. [[United States dollar|$]]35 million) over non-USD line items.
+    usd_item_re = re.compile(
+        r"^\s*\*[^\n]*(?:\[\[(?:United States dollar|US dollar)[^\]]*\]\]|US\$|USD)[^\n]*",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    usd_items = usd_item_re.findall(text)
+    if usd_items:
+        # Strip the leading "* " so the recursive call doesn't re-match this pattern.
+        numbers = [_parse_money_value(item.lstrip().lstrip("*").strip()) for item in usd_items]
+        numbers = [n for n in numbers if n is not None]
+        if numbers:
+            return int(round(sum(numbers) / len(numbers)))
+
+    # If a non-USD currency is present, return the $ equivalent or None.
+    # Currency conversion is not supported — non-USD values without a $ equivalent return None.
+    _non_usd_re = re.compile(
+        r"[¥£€₹₩₽]"
+        r"|\[\[(?:Japanese yen|Chinese yuan|British pound|Pound sterling|"
+        r"Italian lira|French franc|German mark|Soviet ruble|Spanish peseta|Euro)[^\]]*\]\]"
+        r"|\{\{\s*(?:JPY|CNY|EUR|GBP|INR|KRW|RUB|ITL|FRF|DEM|¥|£|€)[^}]*\}\}",
+        re.IGNORECASE,
+    )
+    if _non_usd_re.search(text):
+        m_usd = re.search(r"\$\s*[0-9][\d,.]*(?:\s*(?:million|billion|m|bn))?", text, re.IGNORECASE)
+        if m_usd:
+            val = _parse_money_value(m_usd.group(0))
+            if val is not None:
+                return val
+        return None
+
     cleaned = re.sub(r"<ref[^>]*>.*?</ref>", "", text, flags=re.DOTALL)
     cleaned = re.sub(r"<ref[^>]*/>", "", cleaned)
     cleaned = cleaned.replace("–", "-").replace("—", "-")
@@ -220,8 +259,10 @@ def _parse_money_value(text: str) -> Optional[int]:
         int1, dec1, unit1 = m_range.group(2), m_range.group(3), m_range.group(4)
         int2, dec2, unit2 = m_range.group(5), m_range.group(6), m_range.group(7)
         common_unit = unit1 or unit2
-        v1 = _to_number(int1, dec1, unit1, common_unit)
-        v2 = _to_number(int2, dec2, unit2, common_unit)
+        # Don't apply a fallback unit to a number that already contains commas
+        # (e.g. "985,000" in "985,000–1 million" is already a fully-expressed value).
+        v1 = _to_number(int1, dec1, unit1, common_unit if "," not in int1 else None)
+        v2 = _to_number(int2, dec2, unit2, common_unit if "," not in int2 else None)
         if v1 is not None and v2 is not None:
             return int(round((v1 + v2) / 2))
 
@@ -784,7 +825,7 @@ def _extract_metacritic_score(wikitext: str) -> Optional[int]:
 # Process a movie and return a column with the movie title, 
 # classification, budget, box office, release date, running time, genre,
 # Rotten tomatoes score, and Metacritic score
-def process_movie(article_title: str):
+def process_movie(article_title: str, use_llm: bool = True):
     wt, resolved_title = get_wiki_text(article_title)
     if not wt:
         return {
@@ -801,8 +842,7 @@ def process_movie(article_title: str):
             "metacritic": "",
         }
 
-    # classification = "n/a"
-    classification = classify_movie(wt)
+    classification = classify_movie(wt) if use_llm else None
 
     fields = _extract_infobox_fields(wt)
     parsed_title = _parse_title(fields, wt) or article_title
