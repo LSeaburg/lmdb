@@ -511,7 +511,7 @@ def _lead_paragraph_wikitext(wikitext: str) -> str:
                         i += 1
                 continue
 
-        if wikitext[i] == "\n":
+        if wikitext[i] in " \n\t\r":
             i += 1
             continue
 
@@ -608,9 +608,6 @@ def _extract_genres_from_first_sentence(wikitext: str) -> List[str]:
     genres: List[str] = []
     seen = set()
     film_pos = _first_unlinked_film(sentence)
-    if film_pos == -1:
-        # Fallback to legacy behavior if no standalone 'film' word was found.
-        film_pos = sentence.lower().find(" film")
 
     for m in re.finditer(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]", sentence):
         target = m.group(1).strip()
